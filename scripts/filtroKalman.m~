@@ -1,0 +1,96 @@
+function [ykal F G]=filtroKalman(a,b,c,delta,gamma,sigmar,sigmaq,sigma)
+
+
+
+
+%%% Genero r(t), y(t) %%%
+
+file=fopen('./series_generadas/2003-2004-2005.txt','r');
+A=textscan(file,'%u %f %f %u','delimiter',';');
+fecha_serie=A{1};
+r=A{2};
+area_cobert=A{3};
+numero_est=A{4};
+fclose(file);
+
+file2=fopen('caudal_pdll.txt','r');
+B=textscan(file,'%s %s %f64 %s','delimiter',';','headerlines',4);
+fecha=datenum(B{1},'dd/mm/yyyy');
+flujo=B{3};
+fclose(file2);
+
+
+f1=find(fecha==fecha_serie(1));
+f2=find(fecha==fecha_serie(length(fecha_serie)));
+
+fecha=fecha(f1:f2);
+y=flujo(f1:f2);
+dia1=datestr(datevec(fecha(1)),24);
+dia2=datestr(datevec(fecha(length(fecha))),24);
+cont=0;
+
+
+
+
+
+k=max(length(a),length(b)+delta);
+F=zeros(6,6);
+G=zeros(6,1);
+
+
+
+
+for j=length(a)+1:k+1
+    a(j)=0;
+end
+
+
+
+F(1,:)=[-a(2) 1 0 0 0 0];
+F(2,:)=[-a(3) 0 1 0 0 0];
+F(3,:)=[-a(4) 0 0 1 0 0];
+F(4,:)=[-a(5) 0 0 0 1 0];
+F(5,:)=[-a(6) 0 0 0 0 1];
+F(6,:)=[-a(7) 0 0 0 0 0];
+
+for j=1:delta
+    G(j,1)=1;
+end
+
+for j=1:6-delta
+    G(delta+j)=b(j);
+end
+
+
+
+h=zeros(6,1);
+h(1)=1;
+
+
+
+
+%%% Genero u %%%
+
+u=c*y.^(gamma).*r;
+u=vertcat([0 0 0 0]',u);
+
+ykal=zeros(1,length(y));
+
+xpre=[1;0;0;0;0;0];
+P=eye(6)*10^12;
+
+%%% KALMAN %%%%
+
+
+
+for j=5:length(y)
+    xpre=F*xpre+G*u(j);
+    ppre=F*P*F'+sigma^2*Q;
+    ypre=h'*xpre;
+    
+    K=ppre*h*(sigma^2+h'*ppre*h)^(-1);
+    x=xpre+K*(ykal(j)-ypre);
+    P=ppre-K*h'*ppre;
+    ykal(j)=h'*x;
+end
+

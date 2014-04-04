@@ -1,0 +1,55 @@
+close all
+    
+%%% Constantes
+
+sigmar=900;
+sigmaq=40;
+sigma=.008;
+
+delta=4;
+n=2;
+m=3;
+
+
+R=eye(6)*sigmar;    
+Q=eye(6)*sigmaq;
+
+
+
+%%% Genero serie
+
+
+file=fopen('./series_generadas/2003-2004-2005.txt','r');
+A=textscan(file,'%u %f %f %u','delimiter',';');
+fecha_serie=A{1};
+r=A{2};
+area_cobert=A{3};
+numero_est=A{4};
+fclose(file);
+
+file2=fopen('caudal_pdll.txt','r');
+B=textscan(file,'%s %s %f64 %s','delimiter',';','headerlines',4);
+fecha=datenum(B{1},'dd/mm/yyyy');
+flujo=B{3};
+fclose(file2);
+
+
+f1=find(fecha==fecha_serie(1));
+f2=find(fecha==fecha_serie(length(fecha_serie)));
+
+fecha=fecha(f1:f2);
+y=flujo(f1:f2);
+
+
+
+% [a,b,c,gamma,y2] = determinarModelo(n,m,delta);
+[ykal F G]=filtroKalman(a,b,c,delta,gamma,R,Q,sigma);
+
+figure(1)
+hold on
+plot(y2,'r')
+plot(ykal,'b','LineWidth',2)
+plot(y,'k')
+
+
+    
